@@ -4,7 +4,6 @@ import emu.nebula.net.NetHandler;
 import emu.nebula.net.NetMsgId;
 import emu.nebula.proto.Ike.IKEReq;
 import emu.nebula.proto.Ike.IKEResp;
-import emu.nebula.util.Utils;
 import emu.nebula.net.HandlerId;
 import emu.nebula.Nebula;
 import emu.nebula.net.GameSession;
@@ -48,11 +47,12 @@ public class HandlerIkeReq extends NetHandler {
                 .setServerTs(Nebula.getCurrentTime())
                 .setPubKey(session.getServerPublicKey());
         
-        // Debug
+        /*
         Nebula.getLogger().info("Client Public: " + Utils.base64Encode(session.getClientPublicKey()));
         Nebula.getLogger().info("Server Public: " + Utils.base64Encode(session.getServerPublicKey()));
         Nebula.getLogger().info("Server Private: " + Utils.base64Encode(session.getServerPrivateKey()));
         Nebula.getLogger().info("Key: " + Utils.base64Encode(session.getKey()));
+        */
         
         // Encode and send to client
         return this.encodeMsg(NetMsgId.ike_succeed_ack, rsp);
