@@ -12,9 +12,9 @@ public class HandlerStarTowerInteractReq extends NetHandler {
     @Override
     public byte[] handle(GameSession session, byte[] message) throws Exception {
         // Get star tower instance
-        var instance = session.getPlayer().getStarTowerManager().getInstance();
+        var game = session.getPlayer().getStarTowerManager().getGame();
         
-        if (instance == null) {
+        if (game == null) {
             return this.encodeMsg(NetMsgId.star_tower_interact_failed_ack);
         }
         
@@ -22,7 +22,7 @@ public class HandlerStarTowerInteractReq extends NetHandler {
         var req = StarTowerInteractReq.parseFrom(message);
         
         // Handle interaction
-        var rsp = instance.handleInteract(req);
+        var rsp = game.handleInteract(req);
         
         // Template
         return this.encodeMsg(NetMsgId.star_tower_interact_succeed_ack, rsp);

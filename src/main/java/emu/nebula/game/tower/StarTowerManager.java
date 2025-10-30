@@ -6,10 +6,11 @@ import emu.nebula.Nebula;
 import emu.nebula.data.GameData;
 import emu.nebula.database.GameDatabaseObject;
 import emu.nebula.game.player.Player;
+import emu.nebula.game.player.PlayerChangeInfo;
 import emu.nebula.game.player.PlayerManager;
 import emu.nebula.proto.StarTowerApply.StarTowerApplyReq;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import lombok.Getter;
 
 @Getter
@@ -18,8 +19,13 @@ public class StarTowerManager extends PlayerManager implements GameDatabaseObjec
     @Id
     private int uid;
     
-    private transient Int2ObjectMap<StarTowerBuild> builds;
-    private transient StarTowerInstance instance;
+    // TODO add tower talents here
+    
+    // Tower game instance
+    private transient StarTowerGame game;
+    
+    // Tower builds
+    private transient Long2ObjectMap<StarTowerBuild> builds;
     private transient StarTowerBuild lastBuild;
     
     @Deprecated // Morphia only
@@ -34,7 +40,7 @@ public class StarTowerManager extends PlayerManager implements GameDatabaseObjec
         this.save();
     }
     
-    public Int2ObjectMap<StarTowerBuild> getBuilds() {
+    public Long2ObjectMap<StarTowerBuild> getBuilds() {
         if (this.builds == null) {
             this.loadFromDatabase();
         }
@@ -42,7 +48,11 @@ public class StarTowerManager extends PlayerManager implements GameDatabaseObjec
         return builds;
     }
     
-    public StarTowerInstance apply(StarTowerApplyReq req) {
+    public StarTowerBuild getBuildById(long id) {
+        return this.getBuilds().get(id);
+    }
+    
+    public StarTowerGame apply(StarTowerApplyReq req) {
         // Sanity checks
         var data = GameData.getStarTowerDataTable().get(req.getId());
         if (data == null) {
@@ -60,23 +70,23 @@ public class StarTowerManager extends PlayerManager implements GameDatabaseObjec
             return null;
         }
         
-        // Create instance
-        this.instance = new StarTowerInstance(this, data, formation, req);
+        // Create game
+        this.game = new StarTowerGame(this, data, formation, req);
         
         // Success
-        return this.instance;
+        return this.game;
     }
 
-    public StarTowerInstance giveUp() {
+    public StarTowerGame giveUp() {
         // Cache instance
-        var instance = this.instance;
+        var instance = this.game;
         
         if (instance != null) {
             // Set last build
             this.lastBuild = instance.getBuild();
             
             // Clear instance
-            this.instance = null;
+            this.game = null;
         }
         
         return instance;
@@ -112,10 +122,27 @@ public class StarTowerManager extends PlayerManager implements GameDatabaseObjec
         return true;
     }
     
+    // TODO give rewards to player
+    public PlayerChangeInfo deleteBuild(long buildId, PlayerChangeInfo changes) {
+        // Create change info
+        if (changes == null) {
+            changes = new PlayerChangeInfo();
+        }
+        
+        // Get build
+        var build = this.getBuilds().remove(buildId);
+        
+        if (build != null) {
+            build.delete();
+        }
+        
+        return changes;
+    }
+    
     // Database
     
     private void loadFromDatabase() {
-        this.builds = new Int2ObjectOpenHashMap<>();
+        this.builds = new Long2ObjectOpenHashMap<>();
         
         Nebula.getGameDatabase().getObjects(StarTowerBuild.class, "playerUid", getPlayerUid()).forEach(build -> {
             this.builds.put(build.getUid(), build);

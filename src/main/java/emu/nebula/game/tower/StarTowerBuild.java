@@ -3,6 +3,7 @@ package emu.nebula.game.tower;
 import dev.morphia.annotations.Entity;
 import dev.morphia.annotations.Id;
 import dev.morphia.annotations.Indexed;
+import emu.nebula.Nebula;
 import emu.nebula.data.GameData;
 import emu.nebula.database.GameDatabaseObject;
 import emu.nebula.proto.Public.ItemTpl;
@@ -41,7 +42,7 @@ public class StarTowerBuild implements GameDatabaseObject {
         
     }
     
-    public StarTowerBuild(StarTowerInstance instance) {
+    public StarTowerBuild(StarTowerGame instance) {
         this.uid = Snowflake.newUid();
         this.playerUid = instance.getPlayer().getUid();
         this.name = "";
@@ -73,6 +74,25 @@ public class StarTowerBuild implements GameDatabaseObject {
                 this.getCharPots().put(charId, this.getCharPots().get(charId) + 1);
             }
         }
+    }
+
+    public void setName(String newName) {
+        if (newName.length() > 32) {
+            newName = newName.substring(0, 31);
+        }
+        
+        this.name = newName;
+        Nebula.getGameDatabase().update(this, this.getUid(), "name", this.getName());
+    }
+    
+    public void setLock(boolean state) {
+        this.lock = state;
+        Nebula.getGameDatabase().update(this, this.getUid(), "lock", this.isLock());
+    }
+    
+    public void setPreference(boolean state) {
+        this.preference = state;
+        Nebula.getGameDatabase().update(this, this.getUid(), "preference", this.isPreference());
     }
     
     // Proto
@@ -128,5 +148,11 @@ public class StarTowerBuild implements GameDatabaseObject {
         }
         
         return proto;
+    }
+    
+    // Database
+
+    public void delete() {
+        Nebula.getGameDatabase().delete(this);
     }
 }

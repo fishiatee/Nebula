@@ -26,7 +26,7 @@ import lombok.SneakyThrows;
 
 @Getter
 @Entity(useDiscriminator = false)
-public class StarTowerInstance {
+public class StarTowerGame {
     private transient StarTowerManager manager;
     private transient StarTowerDef data;
     
@@ -64,11 +64,11 @@ public class StarTowerInstance {
     private transient StarTowerBuild build;
     
     @Deprecated // Morphia only
-    public StarTowerInstance() {
+    public StarTowerGame() {
         
     }
     
-    public StarTowerInstance(StarTowerManager manager, StarTowerDef data, Formation formation, StarTowerApplyReq req) {
+    public StarTowerGame(StarTowerManager manager, StarTowerDef data, Formation formation, StarTowerApplyReq req) {
         this.manager = manager;
         this.data = data;
         
