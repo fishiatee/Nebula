@@ -73,9 +73,9 @@ public class CharacterStorage extends PlayerManager {
     public HandbookInfo getCharacterHandbook() {
         var bitset = new Bitset();
         
-        for (var character : this.getCharacterCollection()) {
-            // Get handbook
-            var data = GameData.getHandbookDataTable().get(400000 + character.getSkin());
+        for (var skinId : getPlayer().getInventory().getAllSkinIds()) {
+            // Get handbook data
+            var data = GameData.getHandbookDataTable().get(400000 + skinId);
             if (data == null) continue;
             
             // Set flag

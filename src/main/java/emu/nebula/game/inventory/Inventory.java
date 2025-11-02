@@ -2,9 +2,12 @@ package emu.nebula.game.inventory;
 
 import java.util.List;
 
+import dev.morphia.annotations.Entity;
+import dev.morphia.annotations.Id;
 import emu.nebula.GameConstants;
 import emu.nebula.Nebula;
 import emu.nebula.data.GameData;
+import emu.nebula.database.GameDatabaseObject;
 import emu.nebula.game.player.PlayerManager;
 import emu.nebula.proto.Public.Item;
 import emu.nebula.proto.Public.Res;
@@ -12,18 +15,71 @@ import emu.nebula.game.player.Player;
 import emu.nebula.game.player.PlayerChangeInfo;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.Getter;
 
 @Getter
-public class Inventory extends PlayerManager {
-    private final Int2ObjectMap<GameResource> resources;
-    private final Int2ObjectMap<GameItem> items;
+@Entity(value = "inventory", useDiscriminator = false)
+public class Inventory extends PlayerManager implements GameDatabaseObject {
+    @Id
+    private int uid;
     
-    public Inventory(Player player) {
-        super(player);
-        
+    // Database persistent data
+    private IntSet extraSkins;
+    private IntSet headIcons;
+    private IntSet titles;
+    
+    // Items/resources
+    private transient Int2ObjectMap<GameResource> resources;
+    private transient Int2ObjectMap<GameItem> items;
+    
+    public Inventory() {
         this.resources = new Int2ObjectOpenHashMap<>();
         this.items = new Int2ObjectOpenHashMap<>();
+    }
+    
+    public Inventory(Player player) {
+        this();
+        this.setPlayer(player);
+        this.uid = player.getUid();
+        
+        // Setup
+        this.extraSkins = new IntOpenHashSet();
+        this.headIcons = new IntOpenHashSet();
+        this.titles = new IntOpenHashSet();
+        
+        // Add titles directly
+        this.getTitles().add(player.getTitlePrefix());
+        this.getTitles().add(player.getTitleSuffix());
+        
+        // Save to database
+        this.save();
+    }
+    
+    //
+    
+    public IntCollection getAllSkinIds() {
+        // Setup int collection
+        var skins = new IntOpenHashSet();
+        
+        // Add character skins
+        for (var character : getPlayer().getCharacters().getCharacterCollection()) {
+            // Add default skin id
+            skins.add(character.getData().getDefaultSkinId());
+            
+            // Add advance skin
+            if (character.getAdvance() >= character.getData().getAdvanceSkinUnlockLevel()) {
+                skins.add(character.getData().getAdvanceSkinId());
+            }
+        }
+        
+        // Finally, add extra skins
+        skins.addAll(this.getExtraSkins());
+        
+        // Complete and return
+        return skins;
     }
     
     // Resources

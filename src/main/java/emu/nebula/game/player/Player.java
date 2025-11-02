@@ -31,9 +31,6 @@ import emu.nebula.proto.Public.Story;
 import emu.nebula.proto.Public.WorldClass;
 import emu.nebula.proto.Public.Title;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
-
 import lombok.Getter;
 import us.hebi.quickbuf.RepeatedInt;
 
@@ -56,22 +53,19 @@ public class Player implements GameDatabaseObject {
     private int titleSuffix;
     private int level;
     private int exp;
+    private int[] boards;
     
     private int energy;
     private long energyLastUpdate;
    
-    private int[] boards;
-    private IntSet headIcons;
-    private IntSet titles;
-    
     private long createTime;
     
     // Managers
     private final transient CharacterStorage characters;
-    private final transient Inventory inventory;
     private transient GachaManager gachaManager;
     
     // Referenced data
+    private transient Inventory inventory;
     private transient FormationManager formations;
     private transient Mailbox mailbox;
     private transient StarTowerManager starTowerManager;
@@ -82,7 +76,6 @@ public class Player implements GameDatabaseObject {
     public Player() {
         this.sessions = new HashSet<>();
         this.characters = new CharacterStorage(this);
-        this.inventory = new Inventory(this);
         this.gachaManager = new GachaManager(this);
     }
     
@@ -110,8 +103,9 @@ public class Player implements GameDatabaseObject {
         this.energy = 240;
         this.energyLastUpdate = this.createTime;
         this.boards = new int[] {410301};
-        this.headIcons = new IntOpenHashSet();
-        this.titles = new IntOpenHashSet();
+        
+        // Setup inventory
+        this.inventory = new Inventory(this);
         
         // Add starter characters
         this.getCharacters().addCharacter(103);
@@ -123,10 +117,6 @@ public class Player implements GameDatabaseObject {
         this.getCharacters().addDisc(211005);
         this.getCharacters().addDisc(211007);
         this.getCharacters().addDisc(211008);
-        
-        // Add titles
-        this.getTitles().add(this.getTitlePrefix());
-        this.getTitles().add(this.getTitleSuffix());
     }
     
     public Account getAccount() {
@@ -190,7 +180,7 @@ public class Player implements GameDatabaseObject {
 
     public boolean editTitle(int prefix, int suffix) {
         // Check to make sure we own these titles
-        if (!getTitles().contains(prefix) || !getTitles().contains(suffix)) {
+        if (!getInventory().getTitles().contains(prefix) || !getInventory().getTitles().contains(suffix)) {
             return false;
         }
         
@@ -404,6 +394,11 @@ public class Player implements GameDatabaseObject {
     public void onLoad() {
         // Load from database
         this.getCharacters().loadFromDatabase();
+        
+        // Load inventory first
+        if (this.inventory == null) {
+            this.inventory = this.loadManagerFromDatabase(Inventory.class);
+        }
         this.getInventory().loadFromDatabase();
         
         // Load referenced classes
@@ -501,7 +496,7 @@ public class Player implements GameDatabaseObject {
         }
         
         // Add titles
-        for (int titleId : this.getTitles()) {
+        for (int titleId : this.getInventory().getTitles()) {
             var titleProto = Title.newInstance()
                     .setTitleId(titleId);
             

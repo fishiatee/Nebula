@@ -289,6 +289,51 @@ public class Character implements GameDatabaseObject {
         return changes.setSuccess(true);
     }
     
+    public boolean setSkin(int skinId) {
+        // Sanity check
+        if (this.skin == skinId) {
+            return false;
+        }
+        
+        //
+        var skinData = GameData.getCharacterSkinDataTable().get(skinId);
+        if (skinData == null) {
+            return false;
+        }
+        
+        // Make sure we have the skin
+        if (skinData.getCharId() != this.getCharId()) {
+            return false;
+        }
+        
+        switch (skinData.getType()) {
+            case 1:
+                // Default skin, always allow
+                break;
+            case 2:
+                // Ascension skin, only allow if the character has the right ascension level
+                if (this.getAdvance() < this.getData().getAdvanceSkinUnlockLevel()) {
+                    return false;
+                }
+                break;
+            default:
+                // Extra skin, only allow if we have the skin unlocked
+                if (!getPlayer().getInventory().getExtraSkins().contains(skinId)) {
+                    return false;
+                }
+                break;
+        }
+        
+        // Set skin
+        this.skin = skinId;
+        
+        // Save
+        this.save();
+        
+        // Success
+        return true;
+    }
+    
     // Proto
     
     public Char toProto() {

@@ -12,12 +12,12 @@ public enum ItemType {
     WorldRankExp    (5),
     RogueItem       (6),
     Disc            (7),
-    Equipment       (8),
-    CharacterSkin   (9),    
-    MonthlyCard     (10),
-    Title           (11),
-    Honor           (12),
-    HeadItem        (13);
+    Equipment       (9),
+    CharacterSkin   (10),    
+    MonthlyCard     (11),
+    Title           (12),
+    Honor           (13),
+    HeadItem        (14);
     
     @Getter
     private final int value;
