@@ -42,30 +42,34 @@ public class StarTowerBuild implements GameDatabaseObject {
         
     }
     
-    public StarTowerBuild(StarTowerGame instance) {
+    public StarTowerBuild(StarTowerGame game) {
         this.uid = Snowflake.newUid();
-        this.playerUid = instance.getPlayer().getUid();
+        this.playerUid = game.getPlayer().getUid();
         this.name = "";
         this.charPots = new Int2IntOpenHashMap();
         this.potentials = new Int2IntOpenHashMap();
         this.subNoteSkills = new Int2IntOpenHashMap();
         
         // Characters
-        this.charIds = instance.getDiscs().stream()
+        this.charIds = game.getDiscs().stream()
                 .filter(d -> d.getId() > 0)
                 .mapToInt(d -> d.getId())
                 .toArray();
         
         // Discs
-        this.discIds = instance.getDiscs().stream()
+        this.discIds = game.getDiscs().stream()
                 .filter(d -> d.getId() > 0)
                 .mapToInt(d -> d.getId())
                 .toArray();
         
         // Add potentials
-        for (int id : instance.getPotentials()) {
+        for (var entry : game.getPotentials()) {
+            //
+            int id = entry.getIntKey();
+            int level = entry.getIntValue();
+            
             // Add to potential map
-            this.getPotentials().put(id, instance.getItemCount(id));
+            this.getPotentials().put(id, level);
             
             // Add to character
             var potentialData = GameData.getPotentialDataTable().get(id);
@@ -73,6 +77,11 @@ public class StarTowerBuild implements GameDatabaseObject {
                 int charId = potentialData.getCharId();
                 this.getCharPots().put(charId, this.getCharPots().get(charId) + 1);
             }
+        }
+        
+        // Add sub note skills
+        for (var entry : game.getItems()) {
+            this.getSubNoteSkills().put(entry.getIntKey(), entry.getIntValue());
         }
     }
 

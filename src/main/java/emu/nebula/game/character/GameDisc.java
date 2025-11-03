@@ -9,6 +9,7 @@ import emu.nebula.GameConstants;
 import emu.nebula.Nebula;
 import emu.nebula.data.GameData;
 import emu.nebula.data.resources.DiscDef;
+import emu.nebula.data.resources.SubNoteSkillPromoteGroupDef;
 import emu.nebula.database.GameDatabaseObject;
 import emu.nebula.game.inventory.ItemParamMap;
 import emu.nebula.game.player.Player;
@@ -64,6 +65,11 @@ public class GameDisc implements GameDatabaseObject {
         if (this.data == null && data.getId() == this.getDiscId()) {
             this.data = data;
         }
+    }
+    
+    public SubNoteSkillPromoteGroupDef getSubNoteSkillDef() {
+        int id = (this.getData().getSubNoteSkillGroupId() * 100) + this.getPhase();
+        return GameData.getSubNoteSkillPromoteGroupDataTable().get(id);
     }
     
     public int getMaxGainableExp() {

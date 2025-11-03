@@ -9,6 +9,7 @@ import emu.nebula.data.resources.PotentialDef;
 import emu.nebula.data.resources.StarTowerDef;
 import emu.nebula.data.resources.StarTowerStageDef;
 import emu.nebula.game.formation.Formation;
+import emu.nebula.game.inventory.ItemParamMap;
 import emu.nebula.game.player.Player;
 import emu.nebula.game.player.PlayerChangeInfo;
 import emu.nebula.proto.PublicStarTower.*;
@@ -17,10 +18,10 @@ import emu.nebula.proto.StarTowerInteract.StarTowerInteractReq;
 import emu.nebula.proto.StarTowerInteract.StarTowerInteractResp;
 import emu.nebula.util.Snowflake;
 import emu.nebula.util.Utils;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+
 import lombok.Getter;
 import lombok.SneakyThrows;
 
@@ -54,14 +55,24 @@ public class StarTowerGame {
     private List<StarTowerDisc> discs;
     private IntSet charIds;
     
+    // Case
     private int lastCaseId = 0;
     private int selectorCaseIndex = -1;
+    private int battleCaseIndex = -1;
     private List<StarTowerCase> cases;
     
-    private Int2IntMap items;
-    private IntSet potentials;
+    // Bag
+    private ItemParamMap items;
+    private ItemParamMap res;
+    private ItemParamMap potentials;
     
+    // Cached build
     private transient StarTowerBuild build;
+    private transient ItemParamMap newInfos;
+    
+    private static final int[] COMMON_SUB_NOTE_SKILLS = new int[] {
+        90011, 90012, 90013, 90014, 90015, 90016, 90017
+    };
     
     @Deprecated // Morphia only
     public StarTowerGame() {
@@ -90,8 +101,11 @@ public class StarTowerGame {
         this.charIds = new IntOpenHashSet();
 
         this.cases = new ArrayList<>();
-        this.items = new Int2IntOpenHashMap();
-        this.potentials = new IntOpenHashSet();
+        
+        this.items = new ItemParamMap();
+        this.res = new ItemParamMap();
+        this.potentials = new ItemParamMap();
+        this.newInfos = new ItemParamMap();
         
         // Init formation
         for (int i = 0; i < 3; i++) {
@@ -112,6 +126,14 @@ public class StarTowerGame {
             
             if (disc != null) {
                 this.discs.add(disc.toStarTowerProto());
+                
+                // Add star tower sub note skills
+                if (i >= 3) {
+                    var subNoteData = disc.getSubNoteSkillDef();
+                    if (subNoteData != null) {
+                        this.getItems().add(subNoteData.getItems());
+                    }
+                }
             } else {
                 this.discs.add(StarTowerDisc.newInstance());
             }
@@ -162,6 +184,14 @@ public class StarTowerGame {
     
     // Cases
     
+    public StarTowerCase getBattleCase() {
+        if (this.getBattleCaseIndex() < 0 || this.getBattleCaseIndex() >= this.getCases().size()) {
+            return null;
+        }
+        
+        return this.getCases().get(this.getBattleCaseIndex());
+    }
+    
     public StarTowerCase getSelectorCase() {
         if (this.getSelectorCaseIndex() < 0 || this.getSelectorCaseIndex() >= this.getCases().size()) {
             return null;
@@ -189,6 +219,8 @@ public class StarTowerGame {
         //
         if (towerCase.getIds() != null) {
             this.selectorCaseIndex = this.getCases().size() - 1;
+        } else if (towerCase.getType() == CaseType.Battle) {
+            this.battleCaseIndex = this.getCases().size() - 1;
         }
         
         return towerCase;
@@ -200,33 +232,44 @@ public class StarTowerGame {
         return this.getItems().get(id);
     }
     
-    public PlayerChangeInfo addItem(int id, int count, PlayerChangeInfo changes) {
+    public PlayerChangeInfo addItem(int id, int count, PlayerChangeInfo change) {
         // Create changes if null
-        if (changes == null) {
-            changes = new PlayerChangeInfo();
+        if (change == null) {
+            change = new PlayerChangeInfo();
         }
         
         // Get item data
         var itemData = GameData.getItemDataTable().get(id);
         if (itemData == null) {
-            return changes;
+            return change;
         }
-        
-        // Add item
-        this.getItems().put(id, this.getItems().get(id) + count);
         
         // Handle changes
         switch (itemData.getItemSubType()) {
             case Potential, SpecificPotential -> {
                 // Add potential
-                this.getPotentials().add(id);
+                this.getPotentials().add(id, count);
                 
                 // Add change
-                var change = PotentialInfo.newInstance()
+                var info = PotentialInfo.newInstance()
                         .setTid(id)
-                        .setLevel(this.getItems().get(id));
+                        .setLevel(count);
                 
-                changes.add(change);
+                change.add(info);
+            }
+            case SubNoteSkill -> {
+                // Add to items
+                this.getItems().add(id, count);
+                
+                // Add change
+                var info = TowerItemInfo.newInstance()
+                        .setTid(id)
+                        .setQty(count);
+                
+                change.add(info);
+                
+                // Add to new infos
+                this.getNewInfos().add(id, count);
             }
             default -> {
                 // Ignored
@@ -234,7 +277,48 @@ public class StarTowerGame {
         }
         
         // Return changes
-        return changes;
+        return change;
+    }
+    
+    // Potentials/Sub notes
+    
+    private StarTowerCase createPotentialSelector(int charId) {
+        // Add potential selector
+        var potentialCase = new StarTowerCase(CaseType.SelectSpecialPotential);
+        potentialCase.setTeamLevel(this.getTeamLevel());
+        
+        // Get random potentials
+        List<PotentialDef> potentials = new ArrayList<>();
+        
+        for (var potentialData : GameData.getPotentialDataTable()) {
+            if (potentialData.getCharId() == charId) {
+                potentials.add(potentialData);
+            }
+        }
+        
+        for (int i = 0; i < 3; i++) {
+            var potentialData = Utils.randomElement(potentials);
+            potentialCase.addId(potentialData.getId());
+        }
+        
+        return potentialCase;
+    }
+    
+    private PlayerChangeInfo addRandomSubNoteSkills(PlayerChangeInfo change) {
+        int count = Utils.randomRange(1, 3);
+        int id = Utils.randomElement(COMMON_SUB_NOTE_SKILLS);
+        
+        this.addItem(id, count, change);
+        
+        return change;
+    }
+    
+    private PlayerChangeInfo addRandomSubNoteSkills(int count, PlayerChangeInfo change) {
+        for (int i = 0; i < count; i++) {
+            this.addRandomSubNoteSkills(change);
+        }
+        
+        return change;
     }
     
     // Handlers
@@ -253,8 +337,23 @@ public class StarTowerGame {
             rsp = this.onEnterReq(req, rsp);
         }
         
-        // Set data protos
-        rsp.getMutableData();
+        // Add any items
+        var data = rsp.getMutableData();
+        if (this.getNewInfos().size() > 0) {
+            // Add item protos
+            for (var entry : this.getNewInfos()) {
+                var info = SubNoteSkillInfo.newInstance()
+                        .setTid(entry.getIntKey())
+                        .setQty(entry.getIntValue());
+                
+                data.getMutableInfos().add(info);
+            }
+            
+            // Clear
+            this.getNewInfos().clear();
+        }
+        
+        // Set these protos
         rsp.getMutableChange();
         
         return rsp;
@@ -278,39 +377,35 @@ public class StarTowerGame {
                 .getMutableVictory()
                 .setLv(this.getTeamLevel())
                 .setBattleTime(this.getBattleTime());
-
-            // Add potential selector
-            var potentialCase = new StarTowerCase(CaseType.SelectSpecialPotential);
-            potentialCase.setTeamLevel(this.getTeamLevel());
             
-            // Get random potentials
-            List<PotentialDef> potentials = new ArrayList<>();
+            // Create potential selector
             int charId = this.getChars().get(battleCount % this.getCharIds().size()).getId();
-            
-            for (var potentialData : GameData.getPotentialDataTable()) {
-                if (potentialData.getCharId() == charId) {
-                    potentials.add(potentialData);
-                }
-            }
-            
-            for (int i = 0; i < 3; i++) {
-                var potentialData = Utils.randomElement(potentials);
-                potentialCase.addId(potentialData.getId());
-            }
-            
-            // Increment battle count
-            this.battleCount++;
+            var potentialCase = this.createPotentialSelector(charId);
             
             // Add case
             this.addCase(rsp, potentialCase);
+            
+            // Add sub note skills
+            var battleCase = this.getBattleCase();
+            if (battleCase != null) {
+                var change = new PlayerChangeInfo();
+                int subNoteSkills = battleCase.getSubNoteSkillNum();
+                
+                this.addRandomSubNoteSkills(subNoteSkills, change);
+                
+                rsp.setChange(change.toProto());
+            }
         } else {
             // Handle defeat
             // TODO
         }
         
+        // Increment battle count
+        this.battleCount++;
+        
         return rsp;
     }
-    
+
     public StarTowerInteractResp onSelect(StarTowerInteractReq req, StarTowerInteractResp rsp) {
         var index = req.getMutableSelectReq().getIndex();
         
@@ -325,9 +420,10 @@ public class StarTowerGame {
         }
         
         // Add item
-        var changes = this.addItem(id, 1, null);
+        var change = this.addItem(id, 1, null);
         
-        rsp.setChange(changes.toProto());
+        // Set change
+        rsp.setChange(change.toProto());
         
         return rsp;
     }
@@ -361,6 +457,7 @@ public class StarTowerGame {
         
         // Clear cases
         this.selectorCaseIndex = -1;
+        this.battleCaseIndex = -1;
         this.lastCaseId = 0;
         this.cases.clear();
         
@@ -382,7 +479,7 @@ public class StarTowerGame {
         // Handle room type TODO
         if (this.roomType <= StarTowerRoomType.EliteBattleRoom.getValue()) {
             var battleCase = new StarTowerCase(CaseType.Battle);
-            battleCase.setSubNoteSkillNum(this.getBattleCount());
+            battleCase.setSubNoteSkillNum(Utils.randomRange(1, 3));
             
             this.addCase(battleCase);
             room.addCases(battleCase.toProto());
@@ -404,6 +501,23 @@ public class StarTowerGame {
         this.addCase(rsp, new StarTowerCase(CaseType.RecoveryHP));
         
         return rsp;
+    }
+    
+    // Score
+    
+    public int calculateScore() {
+        // Init score
+        int score = 0;
+        
+        // Potentials TODO
+        
+        // Sub note skills
+        for (var item : this.getItems()) {
+            score += item.getIntValue() * 15;
+        }
+        
+        // Complete
+        return score;
     }
     
     // Proto
@@ -428,8 +542,24 @@ public class StarTowerGame {
             proto.getMutableRoom().addCases(starTowerCase.toProto());
         }
         
-        // TODO
-        proto.getMutableBag();
+        // Set up bag
+        var bag = proto.getMutableBag();
+        
+        for (var entry : this.getItems()) {
+            var item = TowerItemInfo.newInstance()
+                    .setTid(entry.getIntKey())
+                    .setQty(entry.getIntValue());
+            
+            bag.addItems(item);
+        }
+        
+        for (var entry : this.getPotentials()) {
+            var item = PotentialInfo.newInstance()
+                    .setTid(entry.getIntKey())
+                    .setLevel(entry.getIntValue());
+            
+            bag.addPotentials(item);
+        }
         
         return proto;
     }
