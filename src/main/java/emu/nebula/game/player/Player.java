@@ -526,11 +526,13 @@ public class Player implements GameDatabaseObject {
             proto.getMutableFormation().addInfo(f.toProto());
         }
         
-        // Set state
+        // Set player states
         var state = proto.getMutableState()
             .setStorySet(true);
         
-        state.getMutableMail();
+        state.getMutableMail()
+            .setNew(this.getMailbox().hasNewMail());
+        
         state.getMutableBattlePass();
         state.getMutableFriendEnergy();
         state.getMutableMallPackage();

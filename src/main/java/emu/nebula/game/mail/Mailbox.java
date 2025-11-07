@@ -55,6 +55,14 @@ public class Mailbox extends PlayerManager implements GameDatabaseObject, Iterab
                 .orElse(null);
     }
     
+    public boolean hasNewMail() {
+        return this.getList()
+                .stream()
+                .filter(mail -> !mail.isRead() && !mail.isRecv())
+                .findAny()
+                .isPresent();
+    }
+    
     public void sendMail(GameMail mail) {
         // Set mail id
         mail.setId(++this.lastMailId);
