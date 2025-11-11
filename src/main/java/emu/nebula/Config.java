@@ -128,7 +128,7 @@ public class Config {
             this.content = "Welcome to Nebula! Please take these items as a starter gift.";
             this.attachments = List.of(
                 new ItemParam(86009, 1),
-                new ItemParam(86003, 1),
+                new ItemParam(86002, 1),
                 new ItemParam(1, 1_000_000),
                 new ItemParam(2, 30_000)
             );

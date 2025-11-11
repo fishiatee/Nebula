@@ -35,14 +35,6 @@ public class MetaServerlistHandler implements Handler {
         
         this.list.addAgent(agent);
         
-        var agent2 = ServerAgent.newInstance()
-                .setName("Test") // TODO allow change in config
-                .setAddr(server.getServerConfig().getDisplayAddress() + "/agent-zone-1/")
-                .setStatus(1)
-                .setZone(1);
-        
-        this.list.addAgent(agent2);
-        
         // Cache proto
         this.proto = list.toByteArray();
     }
