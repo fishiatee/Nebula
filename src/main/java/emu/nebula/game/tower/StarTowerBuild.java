@@ -18,7 +18,7 @@ import emu.nebula.util.Snowflake;
 import lombok.Getter;
 
 @Getter
-@Entity(value = "star_tower_builds", useDiscriminator = false)
+@Entity(value = "builds", useDiscriminator = false)
 public class StarTowerBuild implements GameDatabaseObject {
     @Id
     private int uid;
