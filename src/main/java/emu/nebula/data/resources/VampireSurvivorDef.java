@@ -10,6 +10,7 @@ public class VampireSurvivorDef extends BaseDef {
     private int Id;
     private int Mode;
     private int NeedWorldClass;
+    private int[] FateCardBundle;
     
     @Override
     public int getId() {

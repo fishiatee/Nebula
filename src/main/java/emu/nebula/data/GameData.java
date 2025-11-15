@@ -93,12 +93,15 @@ public class GameData {
     @Getter private static DataTable<PotentialDef> PotentialDataTable = new DataTable<>();
     @Getter private static DataTable<SubNoteSkillPromoteGroupDef> SubNoteSkillPromoteGroupDataTable = new DataTable<>();
     
+    @Getter private static DataTable<StarTowerBookFateCardBundleDef> StarTowerBookFateCardBundleDataTable = new DataTable<>();
+    @Getter private static DataTable<StarTowerBookFateCardDef> StarTowerBookFateCardDataTable = new DataTable<>();
+    @Getter private static DataTable<FateCardDef> FateCardDataTable = new DataTable<>();
+    
     // Infinity Tower
     @Getter private static DataTable<InfinityTowerLevelDef> InfinityTowerLevelDataTable = new DataTable<>();
     
     // Vampire survivor
     @Getter private static DataTable<VampireSurvivorDef> VampireSurvivorDataTable = new DataTable<>();
-    @Getter private static DataTable<FateCardDef> FateCardDataTable = new DataTable<>();
     
     // Score boss
     @Getter private static DataTable<ScoreBossControlDef> ScoreBossControlDataTable = new DataTable<>();

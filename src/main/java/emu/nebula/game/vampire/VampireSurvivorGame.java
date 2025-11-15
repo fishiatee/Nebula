@@ -1,6 +1,9 @@
 package emu.nebula.game.vampire;
 
+import java.util.Set;
+
 import emu.nebula.data.GameData;
+import emu.nebula.data.resources.FateCardDef;
 import emu.nebula.data.resources.VampireSurvivorDef;
 import emu.nebula.proto.Public.CardInfo;
 import emu.nebula.proto.Public.VampireSurvivorLevelReward;
@@ -9,6 +12,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
 
 @Getter
@@ -23,6 +27,9 @@ public class VampireSurvivorGame {
     private int rewardLevel;
     private IntList rewards;
     
+    // Cache
+    private Set<FateCardDef> randomCards;
+    
     public VampireSurvivorGame(VampireSurvivorManager manager, VampireSurvivorDef data, long[] builds) {
         this.manager = manager;
         this.data = data;
@@ -31,6 +38,10 @@ public class VampireSurvivorGame {
         this.cards = new IntOpenHashSet();
         this.rewards = new IntArrayList();
         
+        // Cache fate cards from bundles
+        this.cacheRandomCards();
+        
+        // Calculate next rewards
         this.calcRewards();
     }
     
@@ -38,15 +49,23 @@ public class VampireSurvivorGame {
         return this.getData().getId();
     }
     
-    private WeightedList<Integer> getRandom() {
-        var random = new WeightedList<Integer>();
+    private void cacheRandomCards() {
+        this.randomCards = new ObjectOpenHashSet<>();
         
-        for (var card : GameData.getFateCardDataTable()) {
-            // Filter only vampire surv cards
-            if (!card.isIsVampire()) {
+        for (int id : this.getData().getFateCardBundle()) {
+            var bundle = GameData.getStarTowerBookFateCardBundleDataTable().get(id);
+            if (bundle == null) {
                 continue;
             }
             
+            this.getRandomCards().addAll(bundle.getCards());
+        }
+    }
+    
+    private WeightedList<Integer> getRandom() {
+        var random = new WeightedList<Integer>();
+        
+        for (var card : this.getRandomCards()) {
             // Skip cards we already have
             if (this.getCards().contains(card.getId())) {
                 continue;
