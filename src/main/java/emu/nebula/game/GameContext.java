@@ -11,6 +11,7 @@ import emu.nebula.Nebula;
 import emu.nebula.game.gacha.GachaModule;
 import emu.nebula.game.player.PlayerModule;
 import emu.nebula.game.scoreboss.ScoreBossModule;
+import emu.nebula.game.tutorial.TutorialModule;
 import emu.nebula.net.GameSession;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
@@ -25,6 +26,7 @@ public class GameContext implements Runnable {
     // Modules
     private final PlayerModule playerModule;
     private final GachaModule gachaModule;
+    private final TutorialModule tutorialModule;
     private final ScoreBossModule scoreBossModule;
     
     // Game loop
@@ -39,6 +41,7 @@ public class GameContext implements Runnable {
         // Setup game modules
         this.playerModule = new PlayerModule(this);
         this.gachaModule = new GachaModule(this);
+        this.tutorialModule = new TutorialModule(this);
         this.scoreBossModule = new ScoreBossModule(this);
         
         // Run game loop

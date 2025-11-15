@@ -8,6 +8,7 @@ import dev.morphia.annotations.Id;
 import emu.nebula.Nebula;
 import emu.nebula.data.GameData;
 import emu.nebula.database.GameDatabaseObject;
+import emu.nebula.game.tutorial.TutorialLevelLog;
 import emu.nebula.game.vampire.VampireSurvivorLog;
 import emu.nebula.proto.PlayerData.PlayerInfo;
 import emu.nebula.proto.Public.CharGemInstance;
@@ -48,6 +49,9 @@ public class PlayerProgress extends PlayerManager implements GameDatabaseObject 
     
     // Fate cards
     private IntSet fateCards;
+    
+    // Tutorial
+    private Map<Integer, TutorialLevelLog> tutorialLog;
 
     @Deprecated // Morphia only
     public PlayerProgress() {
@@ -74,7 +78,12 @@ public class PlayerProgress extends PlayerManager implements GameDatabaseObject 
         // Vampire Survivor
         this.vampireLog = new HashMap<>();
         this.vampireTalents = new Bitset();
+        
+        // Fate cards
         this.fateCards = new IntOpenHashSet();
+        
+        // Tutorials
+        this.tutorialLog = new HashMap<>();
         
         // Save to database
         this.save();
@@ -218,6 +227,11 @@ public class PlayerProgress extends PlayerManager implements GameDatabaseObject 
             for (var log : this.getVampireLog().values()) {
                 vsProto.addRecords(log.toProto());
             }
+        }
+        
+        // Tutorials
+        for (var tutorial : this.getTutorialLog().values()) {
+            proto.addTutorialLevels(tutorial.toProto());
         }
     }
 }
