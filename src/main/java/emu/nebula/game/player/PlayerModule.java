@@ -22,10 +22,11 @@ import emu.nebula.game.inventory.GameResource;
 import emu.nebula.game.inventory.Inventory;
 import emu.nebula.game.mail.Mailbox;
 import emu.nebula.game.quest.QuestManager;
+import emu.nebula.game.scoreboss.ScoreBossRankEntry;
 import emu.nebula.game.story.StoryManager;
 import emu.nebula.game.tower.StarTowerBuild;
 import emu.nebula.net.GameSession;
-import emu.nebula.proto.ScoreBossRank;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
@@ -183,7 +184,7 @@ public class PlayerModule extends GameContextModule {
         datastore.getCollection(AgentManager.class).deleteOne(idFilter);
         
         datastore.getCollection(BattlePass.class).deleteOne(idFilter);
-        datastore.getCollection(ScoreBossRank.class).deleteOne(idFilter);
+        datastore.getCollection(ScoreBossRankEntry.class).deleteOne(idFilter);
         
         // Delete friendships
         datastore.getCollection(Friendship.class).deleteMany(Filters.or(Filters.eq("playerUid", uid), Filters.eq("friendUid", uid)));
