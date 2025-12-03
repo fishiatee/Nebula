@@ -7,7 +7,6 @@ import dev.morphia.annotations.Entity;
 
 import emu.nebula.GameConstants;
 import emu.nebula.data.GameData;
-import emu.nebula.data.resources.PotentialDef;
 import emu.nebula.data.resources.StarTowerDef;
 import emu.nebula.data.resources.StarTowerStageDef;
 import emu.nebula.game.formation.Formation;
@@ -427,22 +426,35 @@ public class StarTowerGame {
      * Creates a potential selector for the specified character
      */
     public StarTowerBaseCase createPotentialSelector(int charId) {
-        // Get random potentials
-        List<PotentialDef> potentials = new ArrayList<>();
-        
-        for (var potentialData : GameData.getPotentialDataTable()) {
-            if (potentialData.getCharId() == charId) {
-                potentials.add(potentialData);
-            }
+        // Get character potentials
+        var data = GameData.getCharPotentialDataTable().get(charId);
+        if (data == null) {
+            return null;
         }
+        
+        // Random potentials list
+        var potentials = new IntArrayList();
+        
+        // Add potentials based on character role
+        boolean isMainCharacter = this.getCharIds().getInt(0) == charId;
+        
+        if (isMainCharacter) {
+            potentials.addElements(0, data.getMasterSpecificPotentialIds());
+            potentials.addElements(0, data.getMasterNormalPotentialIds());
+        } else {
+            potentials.addElements(0, data.getAssistSpecificPotentialIds());
+            potentials.addElements(0, data.getAssistNormalPotentialIds());
+        }
+        
+        potentials.addElements(0, data.getCommonPotentialIds());
         
         // Get up to 3 random potentials
         // TODO bug: this may pick duplicate potentials
         IntList selector = new IntArrayList();
         
         for (int i = 0; i < 3; i++) {
-            var potentialData = Utils.randomElement(potentials);
-            selector.add(potentialData.getId());
+            var potentialId = Utils.randomElement(potentials);
+            selector.add(potentialId);
         }
         
         // Creator potential selector case
