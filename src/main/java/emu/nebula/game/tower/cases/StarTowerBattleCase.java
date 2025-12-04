@@ -6,6 +6,7 @@ import emu.nebula.game.player.PlayerChangeInfo;
 import emu.nebula.proto.PublicStarTower.StarTowerRoomCase;
 import emu.nebula.proto.StarTowerInteract.StarTowerInteractReq;
 import emu.nebula.proto.StarTowerInteract.StarTowerInteractResp;
+
 import lombok.Getter;
 
 @Getter
@@ -78,10 +79,10 @@ public class StarTowerBattleCase extends StarTowerBaseCase {
                 .setLv(this.getGame().getTeamLevel())
                 .setBattleTime(this.getGame().getBattleTime());
             
-            // Add money
-            int money = this.getRoom().getStage().getInteriorCurrencyQuantity();
+            // Add coin
+            int coin = this.getRoom().getStage().getInteriorCurrencyQuantity();
             
-            this.getGame().addItem(GameConstants.STAR_TOWER_GOLD_ITEM_ID, money, change);
+            this.getGame().addItem(GameConstants.STAR_TOWER_COIN_ITEM_ID, coin, change);
             
             // Handle pending potential selectors
             var nextCases = this.getGame().handlePendingPotentialSelectors();

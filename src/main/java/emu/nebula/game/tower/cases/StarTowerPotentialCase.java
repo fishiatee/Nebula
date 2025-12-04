@@ -44,7 +44,7 @@ public class StarTowerPotentialCase extends StarTowerBaseCase {
         }
         
         // Add item
-        var change = this.getGame().addItem(id, 1, null);
+        var change = this.getGame().addItem(id, 1);
         
         // Set change
         rsp.setChange(change.toProto());

@@ -18,9 +18,9 @@ public class StarTowerBattleRoom extends StarTowerBaseRoom {
     public void onEnter() {
         // Create battle case
         this.getGame().setPendingSubNotes(Utils.randomRange(1, 3));
-        this.getGame().addCase(new StarTowerBattleCase(this.getGame().getPendingSubNotes()));
+        this.addCase(new StarTowerBattleCase(this.getGame().getPendingSubNotes()));
         
         // Create sync hp case
-        this.getGame().addCase(new StarTowerSyncHPCase());
+        this.addCase(new StarTowerSyncHPCase());
     }
 }

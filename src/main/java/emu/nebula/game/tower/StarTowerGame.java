@@ -19,6 +19,7 @@ import emu.nebula.game.tower.cases.StarTowerDoorCase;
 import emu.nebula.game.tower.cases.StarTowerHawkerCase;
 import emu.nebula.game.tower.cases.StarTowerNpcRecoveryHPCase;
 import emu.nebula.game.tower.cases.StarTowerPotentialCase;
+import emu.nebula.game.tower.cases.StarTowerStrengthenMachineCase;
 import emu.nebula.game.tower.room.RoomType;
 import emu.nebula.game.tower.room.StarTowerBaseRoom;
 import emu.nebula.game.tower.room.StarTowerBattleRoom;
@@ -78,6 +79,9 @@ public class StarTowerGame {
     // Sub note skill drop list
     private IntList subNoteDropList;
     
+    // Modifiers
+    private StarTowerModifiers modifiers;
+    
     // Cached build
     private transient StarTowerBuild build;
     private transient ItemParamMap newInfos;
@@ -121,6 +125,9 @@ public class StarTowerGame {
         
         // Melody skill drop list
         this.subNoteDropList = new IntArrayList();
+        
+        // Init modifiers
+        this.modifiers = new StarTowerModifiers(this);
         
         // Init formation
         for (int i = 0; i < 3; i++) {
@@ -167,10 +174,10 @@ public class StarTowerGame {
             this.subNoteDropList.add(id);
         }
         
-        // Starting gold
-        int money = this.getStartingGold();
-        if (money > 0) {
-            this.getRes().add(GameConstants.STAR_TOWER_GOLD_ITEM_ID, money);
+        // Add starting coin directly
+        int coin = this.getModifiers().getStartingCoin();
+        if (coin > 0) {
+            this.getRes().add(GameConstants.STAR_TOWER_COIN_ITEM_ID, coin);
         }
     }
     
@@ -184,6 +191,10 @@ public class StarTowerGame {
         }
         
         return this.build;
+    }
+    
+    public int getDifficulty() {
+        return this.getData().getDifficulty();
     }
     
     public int getRandomCharId() {
@@ -250,20 +261,6 @@ public class StarTowerGame {
         this.room.onEnter();
     }
     
-    public int getStartingGold() {
-        int gold = 0;
-        
-        if (this.getManager().hasGrowthNode(10103)) {
-            gold += 50;
-        } if (this.getManager().hasGrowthNode(10403)) {
-            gold += 100;
-        } if (this.getManager().hasGrowthNode(10702)) {
-            gold += 200;
-        }
-        
-        return gold;
-    }
-    
     public void addExp(int amount) {
         this.teamExp += amount;
     }
@@ -322,10 +319,23 @@ public class StarTowerGame {
         return this.getItems().get(id);
     }
     
+    public int getResCount(int id) {
+        return this.getRes().get(id);
+    }
+    
+    public PlayerChangeInfo addItem(int id, int count) {
+        return this.addItem(id, count, null);
+    }
+    
     public PlayerChangeInfo addItem(int id, int count, PlayerChangeInfo change) {
         // Create changes if null
         if (change == null) {
             change = new PlayerChangeInfo();
+        }
+        
+        // Sanity check
+        if (count == 0) {
+            return change;
         }
         
         // Get item data
@@ -431,6 +441,10 @@ public class StarTowerGame {
         if (this.isOnFinalFloor()) {
             // Create hawker case (shop)
             cases.add(new StarTowerHawkerCase(this));
+            // Create strengthen machine
+            if (this.getModifiers().isEnableEndStrengthen()) {
+                cases.add(new StarTowerStrengthenMachineCase());
+            }
         } else if (this.getRoom() instanceof StarTowerBattleRoom) {
             // Create recovery npc
             cases.add(new StarTowerNpcRecoveryHPCase());
@@ -473,6 +487,55 @@ public class StarTowerGame {
         }
         
         potentials.addElements(0, data.getCommonPotentialIds());
+        
+        // Get up to 3 random potentials
+        IntList selector = new IntArrayList();
+        
+        for (int i = 0; i < 3; i++) {
+            // Sanity check
+            if (potentials.isEmpty()) {
+                break;
+            }
+            
+            // Get random potential id
+            int index = ThreadLocalRandom.current().nextInt(0, potentials.size());
+            int potentialId = potentials.getInt(index);
+            
+            // Add to selector
+            selector.add(potentialId);
+            
+            // Remove potential id from the selector
+            potentials.removeInt(index);
+        }
+        
+        // Sanity check
+        if (selector.isEmpty()) {
+            return null;
+        }
+        
+        // Creator potential selector case
+        return new StarTowerPotentialCase(this.getTeamLevel(), selector);
+    }
+    
+    public StarTowerBaseCase createStrengthenSelector() {
+        // Random potentials list
+        var potentials = new IntArrayList();
+        
+        // Get upgradable potentials
+        for (var item : this.getPotentials()) {
+            // Get potential data
+            var potential = GameData.getPotentialDataTable().get(item.getIntKey());
+            if (potential == null) continue;
+            
+            // Check max level
+            int level = item.getIntValue();
+            if (level >= potential.getMaxLevel()) {
+                continue;
+            }
+            
+            // Add
+            potentials.add(potential.getId());
+        }
         
         // Get up to 3 random potentials
         IntList selector = new IntArrayList();

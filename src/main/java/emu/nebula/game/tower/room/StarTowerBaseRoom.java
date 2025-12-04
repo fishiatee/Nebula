@@ -5,6 +5,7 @@ import java.util.List;
 
 import emu.nebula.data.resources.StarTowerStageDef;
 import emu.nebula.game.tower.StarTowerGame;
+import emu.nebula.game.tower.StarTowerModifiers;
 import emu.nebula.game.tower.cases.CaseType;
 import emu.nebula.game.tower.cases.StarTowerBaseCase;
 import emu.nebula.game.tower.cases.StarTowerSyncHPCase;
@@ -46,6 +47,14 @@ public class StarTowerBaseRoom {
     
     public boolean hasDoor() {
         return this.hasDoor;
+    }
+    
+    public StarTowerModifiers getModifiers() {
+        return this.getGame().getModifiers();
+    }
+    
+    public StarTowerBaseCase createExit() {
+        return this.getGame().createExit();
     }
     
     // Map info
@@ -105,11 +114,11 @@ public class StarTowerBaseRoom {
     // Events
     
     public void onEnter() {
-        // Create door case
-        this.getGame().createExit();
-        
         // Create sync hp case
-        this.getGame().addCase(new StarTowerSyncHPCase());
+        this.addCase(new StarTowerSyncHPCase());
+        
+        // Create door case
+        this.createExit();
     }
     
     // Proto

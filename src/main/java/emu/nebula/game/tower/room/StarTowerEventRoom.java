@@ -15,10 +15,10 @@ public class StarTowerEventRoom extends StarTowerBaseRoom {
 
     @Override
     public void onEnter() {
-        // Create door case
-        this.getGame().createExit();
-        
         // Create sync hp case
-        this.getGame().addCase(new StarTowerSyncHPCase());
+        this.addCase(new StarTowerSyncHPCase());
+        
+        // Create door case
+        this.createExit();
     }
 }

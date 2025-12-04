@@ -42,15 +42,18 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
     
     @Override
     public StarTowerInteractResp interact(StarTowerInteractReq req, StarTowerInteractResp rsp) {
-     // Set nil resp
+        // Set nil resp
         rsp.getMutableNilResp();
         
         // Get goods
         var goods = this.getGoods().get(req.getHawkerReq().getSid());
+        if (goods == null) {
+            return rsp;
+        }
         
         // Make sure we have enough currency
-        int gold = this.getGame().getRes().get(GameConstants.STAR_TOWER_GOLD_ITEM_ID);
-        if (gold < goods.getPrice() || goods.isSold()) {
+        int coin = this.getGame().getRes().get(GameConstants.STAR_TOWER_COIN_ITEM_ID);
+        if (coin < goods.getPrice() || goods.isSold()) {
             return rsp;
         }
         
@@ -61,7 +64,7 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
         this.getGame().addCase(rsp.getMutableCases(), this.getGame().createPotentialSelector());
         
         // Remove items
-        var change = this.getGame().addItem(GameConstants.STAR_TOWER_GOLD_ITEM_ID, -goods.getPrice(), null);
+        var change = this.getGame().addItem(GameConstants.STAR_TOWER_COIN_ITEM_ID, -goods.getPrice());
         
         // Set change info
         rsp.setChange(change.toProto());
