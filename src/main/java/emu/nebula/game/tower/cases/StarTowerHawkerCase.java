@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import emu.nebula.GameConstants;
+import emu.nebula.game.player.PlayerChangeInfo;
 import emu.nebula.game.tower.StarTowerShopGoods;
 import emu.nebula.proto.PublicStarTower.HawkerCaseData;
 import emu.nebula.proto.PublicStarTower.HawkerGoods;
@@ -37,9 +38,38 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
         // Clear goods
         this.getGoods().clear();
         
+        // Caclulate amount of potentials/sub notes to sell
+        int total = getModifiers().getShopGoodsCount();
+        
+        int minPotentials = Math.max(total / 2, 2);
+        int maxPotentials = Math.max(total - 1, minPotentials);
+        int potentials = Utils.randomRange(minPotentials, maxPotentials);
+        int subNotes = total - potentials;
+        
         // Add goods
-        for (int i = 0; i < getModifiers().getShopGoodsCount(); i++) {
-            this.addGoods(new StarTowerShopGoods(1, 1, 200));
+        for (int i = 0; i < potentials; i++) {
+            // Create potential selector shop item
+            var goods = new StarTowerShopGoods(1, 102, 200);
+            
+            // Add character specific potentials
+            if (Utils.generateRandomDouble() < .2) {
+                goods.setCharPos(1);
+            }
+            
+            // Add to goods map
+            this.addGoods(goods);
+        }
+        for (int i = 0; i < subNotes; i++) {
+            // Randomize sub note
+            int id = Utils.randomElement(this.getGame().getSubNoteDropList());
+            int count = Utils.randomRange(3, 10);
+            
+            // Create sub note shop item
+            var goods = new StarTowerShopGoods(2, id, 15 * count);
+            goods.setCount(count);
+            
+            // Add to goods map
+            this.addGoods(goods);
         }
         
         // Apply discounts based on star tower talents
@@ -121,6 +151,9 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
         // Create new goods
         this.initGoods();
         
+        // Consume reroll count
+        this.getGame().getModifiers().consumeShopReroll();
+        
         // Set in proto
         rsp.getMutableSelectResp()
             .setHawkerCase(this.toHawkerCaseProto());
@@ -130,9 +163,6 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
         
         // Set change info
         rsp.setChange(change.toProto());
-        
-        // Consume reroll count
-        this.getGame().getModifiers().consumeShopReroll();
     }
     
     private void buy(int sid, StarTowerInteractResp rsp) {
@@ -153,11 +183,21 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
         // Mark goods as sold
         goods.markAsSold();
         
-        // Add case
-        this.getGame().addCase(rsp.getMutableCases(), this.getGame().createPotentialSelector());
+        // Create change info
+        var change = new PlayerChangeInfo();
+        
+        // Add goods
+        if (goods.getType() == 1) {
+            // Potential selector
+            int charId = goods.getCharId(this.getGame());
+            this.getGame().addCase(rsp.getMutableCases(), this.getGame().createPotentialSelector(charId));
+        } else {
+            // Sub notes
+            this.getGame().addItem(goods.getGoodsId(), goods.getCount(), change);
+        }
         
         // Remove coins
-        var change = this.getGame().addItem(GameConstants.STAR_TOWER_COIN_ITEM_ID, -price);
+        this.getGame().addItem(GameConstants.STAR_TOWER_COIN_ITEM_ID, -price, change);
         
         // Set change info
         rsp.setChange(change.toProto());
@@ -179,15 +219,19 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
             var goods = entry.getValue();
             
             var info = HawkerGoods.newInstance()
-                    .setIdx(goods.getGoodsId())
+                    .setIdx(1)
                     .setSid(sid)
                     .setType(goods.getType())
-                    .setGoodsId(102) // ?
+                    .setGoodsId(goods.getGoodsId())
                     .setPrice(goods.getDisplayPrice())
                     .setTag(1);
             
             if (goods.hasDiscount()) {
                 info.setDiscount(goods.getPrice());
+            }
+            
+            if (goods.getCharPos() > 0) {
+                info.setCharPos(goods.getCharPos());
             }
             
             hawker.addList(info);

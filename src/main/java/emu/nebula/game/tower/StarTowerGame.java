@@ -458,14 +458,18 @@ public class StarTowerGame {
      * Creates a potential selector for a random character
      */
     public StarTowerBaseCase createPotentialSelector() {
-        int charId = this.getRandomCharId();
-        return this.createPotentialSelector(charId);
+        return this.createPotentialSelector(0);
     }
     
     /**
      * Creates a potential selector for the specified character
      */
     public StarTowerBaseCase createPotentialSelector(int charId) {
+        // Check character id
+        if (charId <= 0) {
+            charId = this.getRandomCharId();
+        }
+        
         // Get character potentials
         var data = GameData.getCharPotentialDataTable().get(charId);
         if (data == null) {
@@ -498,14 +502,10 @@ public class StarTowerGame {
             }
             
             // Get random potential id
-            int index = ThreadLocalRandom.current().nextInt(0, potentials.size());
-            int potentialId = potentials.getInt(index);
+            int potentialId = Utils.randomElement(potentials, true);
             
             // Add to selector
             selector.add(potentialId);
-            
-            // Remove potential id from the selector
-            potentials.removeInt(index);
         }
         
         // Sanity check
