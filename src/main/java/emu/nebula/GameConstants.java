@@ -55,6 +55,9 @@ public class GameConstants {
     public static final int[] TOWER_COMMON_SUB_NOTE_SKILLS = new int[] {
         90011, 90012, 90013, 90014, 90015, 90016, 90017
     };
+    public static final int[] TOWER_EVENTS_IDS = new int[] {
+        101, 102, 104, 105, 106, 107, 108, 114, 115, 116, 126, 127, 128
+    };
     
     public static int[][] VAMPIRE_SURVIVOR_BONUS_POWER = new int[][] {
         new int[] {100, 120},

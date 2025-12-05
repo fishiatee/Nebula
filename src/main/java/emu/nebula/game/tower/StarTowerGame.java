@@ -395,6 +395,11 @@ public class StarTowerGame {
                 change.add(info);
             }
             case SubNoteSkill -> {
+                // Sanity check to make sure we dont remove more than what we have
+                if (count < 0) {
+                    count = Math.max(count, -this.getItems().get(id));
+                }
+                
                 // Add to items
                 this.getItems().add(id, count);
                 
@@ -409,6 +414,11 @@ public class StarTowerGame {
                 this.getNewInfos().add(id, count);
             }
             case Res -> {
+                // Sanity check to make sure we dont remove more than what we have
+                if (count < 0) {
+                    count = Math.max(count, -this.getRes().get(id));
+                }
+                
                 // Add to res
                 this.getRes().add(id, count);
                 
@@ -484,10 +494,14 @@ public class StarTowerGame {
         return this.createPotentialSelector(0);
     }
     
+    public StarTowerBaseCase createPotentialSelector(int charId) {
+        return this.createPotentialSelector(charId, false);
+    }
+    
     /**
      * Creates a potential selector for the specified character
      */
-    public StarTowerBaseCase createPotentialSelector(int charId) {
+    public StarTowerBaseCase createPotentialSelector(int charId, boolean rareOnly) {
         // Check character id
         if (charId <= 0) {
             charId = this.getRandomCharId();
@@ -507,13 +521,21 @@ public class StarTowerGame {
         
         if (isMainCharacter) {
             list.addElements(0, data.getMasterSpecificPotentialIds());
-            list.addElements(0, data.getMasterNormalPotentialIds());
+            
+            if (!rareOnly) {
+                list.addElements(0, data.getMasterNormalPotentialIds());
+            }
         } else {
             list.addElements(0, data.getAssistSpecificPotentialIds());
-            list.addElements(0, data.getAssistNormalPotentialIds());
+            
+            if (!rareOnly) {
+                list.addElements(0, data.getAssistNormalPotentialIds());
+            }
         }
         
-        list.addElements(0, data.getCommonPotentialIds());
+        if (!rareOnly) {
+            list.addElements(0, data.getCommonPotentialIds()); 
+        }
         
         // Remove potentials we already have maxed out
         var potentials = new IntArrayList();
@@ -613,9 +635,13 @@ public class StarTowerGame {
         this.pendingSubNotes = amount;
     }
     
+    public int getRandomSubNoteId() {
+        return Utils.randomElement(this.getSubNoteDropList());
+    }
+    
     private PlayerChangeInfo addRandomSubNoteSkills(PlayerChangeInfo change) {
+        int id = this.getRandomSubNoteId();
         int count = Utils.randomRange(1, 3);
-        int id = Utils.randomElement(this.getSubNoteDropList());
         
         this.addItem(id, count, change);
         

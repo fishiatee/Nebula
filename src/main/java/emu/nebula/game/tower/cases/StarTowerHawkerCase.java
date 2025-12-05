@@ -72,7 +72,7 @@ public class StarTowerHawkerCase extends StarTowerBaseCase {
             this.addGoods(goods);
         }
         
-        // Apply discounts based on star tower talents
+        // Apply discounts based on star tower growth nodes
         if (getModifiers().isShopDiscountTier1()) {
             this.applyDiscount(1.0, 2, 0.8);
         }
