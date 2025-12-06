@@ -30,7 +30,7 @@ public class BattlePass implements GameDatabaseObject {
     private int uid;
     private transient BattlePassManager manager;
     
-    private int battlePassId;
+    private int battlePassId; // Season id
     private int mode;
     private int level;
     private int exp;
@@ -71,12 +71,27 @@ public class BattlePass implements GameDatabaseObject {
         return manager.getPlayer();
     }
     
+    /**
+     * Sets the mode directly
+     */
+    public synchronized void setMode(int mode) {
+        this.mode = mode;
+    }
+    
     public boolean isPremium() {
         return this.mode > 0;
     }
 
     private BattlePassRewardDef getRewardData(int level) {
         return GameData.getBattlePassRewardDataTable().get((this.getBattlePassId() << 16) + level);
+    }
+    
+    /**
+     * Sets the level directly, use getMaxExp() instead if adding exp.
+     */
+    public synchronized void setLevel(int level) {
+        this.level = level;
+        this.exp = 0;
     }
     
     public int getMaxExp() {
