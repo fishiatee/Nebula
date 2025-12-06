@@ -159,6 +159,11 @@ public class BattlePass implements GameDatabaseObject {
             this.syncQuest(quest);
         }
         
+        // Reset weekly limit for exp
+        if (resetWeekly) {
+            this.expWeek = 0;
+        }
+        
         // Persist to database
         this.save();
     }
